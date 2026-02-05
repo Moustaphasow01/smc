@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SMC Decision Engine</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <section id="dashboardView" class="view active">
+    <header class="topbar">
+      <div class="brand">SMC Dashboard</div>
+      <div class="dashboard-controls">
+        <input id="dashboardSearch" class="input" type="text" placeholder="🔍 Rechercher une paire..." />
+        <select id="biasFilter" class="input">
+          <option value="ALL">Tous les biais</option>
+          <option value="BULLISH">BULLISH</option>
+          <option value="BEARISH">BEARISH</option>
+          <option value="UNKNOWN">UNKNOWN</option>
+        </select>
+        <select id="sortFilter" class="input">
+          <option value="updated">Dernière modif.</option>
+          <option value="symbol">Paire (A-Z)</option>
+          <option value="progress">Progression</option>
+          <option value="mode">Mode</option>
+        </select>
+        <div class="view-toggle">
+          <button id="gridViewBtn" class="view-toggle-btn active" type="button" title="Vue grille">☰</button>
+          <button id="listViewBtn" class="view-toggle-btn" type="button" title="Vue liste">≡</button>
+        </div>
+        <button id="newSessionBtn" class="btn-primary" type="button">+ Nouvelle Session</button>
+      </div>
+    </header>
+
+    <main class="container">
+      <!-- Statistiques -->
+      <section id="dashboardStats" class="dashboard-stats">
+        <div class="stat-card">
+          <div class="stat-icon">📊</div>
+          <div class="stat-content">
+            <div class="stat-value" id="statTotal">0</div>
+            <div class="stat-label">Sessions totales</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🟢</div>
+          <div class="stat-content">
+            <div class="stat-value" id="statBullish">0</div>
+            <div class="stat-label">BULLISH</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🔴</div>
+          <div class="stat-content">
+            <div class="stat-value" id="statBearish">0</div>
+            <div class="stat-label">BEARISH</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🎯</div>
+          <div class="stat-content">
+            <div class="stat-value" id="statAvgProgress">0%</div>
+            <div class="stat-label">Progression moy.</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="dashboardGrid" class="dashboard-grid"></section>
+      <div id="dashboardEmpty" class="empty-state">
+        <h3>Aucune session</h3>
+        <p>Créez une première session pour commencer.</p>
+      </div>
+    </main>
+  </section>
+
+  <section id="sessionView" class="view">
+    <header class="topbar">
+      <div class="session-left">
+        <button id="backToDashboard" class="btn-ghost" type="button">← Dashboard</button>
+        <div>
+          <div class="brand">SMC Session</div>
+          <div id="sessionSymbol" class="session-symbol">—</div>
+        </div>
+      </div>
+      <div class="badges">
+        <span id="modeBadge" class="badge badge-neutral">MODE: —</span>
+        <span id="biasBadge" class="badge badge-neutral">BIAS: —</span>
+        <span id="valueZoneBadge" class="badge badge-neutral">VALUE: —</span>
+        <span id="currentStateBadge" class="badge badge-neutral">STATE: —</span>
+      </div>
+      <div class="session-actions">
+        <label class="toggle">
+          <input id="trainingModeToggle" type="checkbox" />
+          <span class="toggle-track"></span>
+          <span class="toggle-label">Mode formation</span>
+        </label>
+        <button id="resetSessionBtn" class="btn-reset" type="button">Reset Session</button>
+        <button id="exportSessionBtn" class="btn-primary" type="button">Export JSON</button>
+      </div>
+    </header>
+
+    <main class="container">
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="checklistTab" type="button">Checklist SMC</button>
+        <button class="tab-btn" data-tab="discussionTab" type="button">Discussion</button>
+        <button class="tab-btn" data-tab="transitionsTab" type="button">Transitions</button>
+      </div>
+
+      <section id="checklistTab" class="tab-content active">
+        <section class="context-panel">
+          <h3>📊 Contexte & Notes</h3>
+          <div class="context-grid">
+            <div class="context-field">
+              <label for="symbolInput">Paire (SYMBOL):</label>
+              <input id="symbolInput" type="text" readonly />
+            </div>
+            <div class="context-field">
+              <label for="notesInput">Notes personnelles:</label>
+              <textarea id="notesInput" placeholder="Notes, observations..."></textarea>
+            </div>
+          </div>
+        </section>
+
+        <section class="progress">
+          <div class="progress-label">Progression</div>
+          <div class="progress-bar">
+            <div id="progressFill" class="progress-fill" style="width: 0%"></div>
+          </div>
+        </section>
+
+        <!-- Prochaine étape -->
+        <section id="nextActionCard" class="next-action-card">
+          <div class="next-action-icon">🎯</div>
+          <div class="next-action-content">
+            <h3>Prochaine étape</h3>
+            <p id="nextActionText">—</p>
+          </div>
+        </section>
+
+        <section class="tree">
+          <section class="card" id="card-d1">
+            <h2>D1 - Daily</h2>
+            <p>Valider le contexte macro puis définir le biais directionnel.</p>
+            <div class="checks">
+              <label><input type="checkbox" data-state="D1_STRUCTURE_OK" data-group="D1" data-step="1" data-step-id="d1-structure" /> Structure D1 valide <span class="info-icon" data-step-id="d1-structure">ⓘ</span> <button class="ai-button" data-step-id="d1-structure" type="button" title="Générer prompt IA">?</button></label>
+              <label><input type="checkbox" data-state="D1_BOS_OK" data-group="D1" data-step="2" data-step-id="d1-bos" /> BOS D1 confirmé <span class="info-icon" data-step-id="d1-bos">ⓘ</span> <button class="ai-button" data-step-id="d1-bos" type="button" title="Générer prompt IA">?</button></label>
+              <label><input type="checkbox" data-state="D1_BIAS_BULLISH" data-group="D1" data-step="3" data-bias="BULL" data-step-id="d1-bias-bull" /> Biais haussier <span class="info-icon" data-step-id="d1-bias-bull">ⓘ</span> <button class="ai-button" data-step-id="d1-bias-bull" type="button" title="Générer prompt IA">?</button></label>
+              <label><input type="checkbox" data-state="D1_BIAS_BEARISH" data-group="D1" data-step="3" data-bias="BEAR" data-step-id="d1-bias-bear" /> Biais baissier <span class="info-icon" data-step-id="d1-bias-bear">ⓘ</span> <button class="ai-button" data-step-id="d1-bias-bear" type="button" title="Générer prompt IA">?</button></label>
+              <label class="conditional-check" data-show-if="D1_BIAS_BULLISH"><input type="checkbox" data-state="D1_DISCOUNT_OK" data-group="D1" data-step="4" data-bias="BULL" data-step-id="d1-discount" /> Prix en DISCOUNT <span class="info-icon" data-step-id="d1-discount">ⓘ</span> <button class="ai-button" data-step-id="d1-discount" type="button" title="Générer prompt IA">?</button></label>
+              <label class="conditional-check" data-show-if="D1_BIAS_BEARISH"><input type="checkbox" data-state="D1_PREMIUM_OK" data-group="D1" data-step="4" data-bias="BEAR" data-step-id="d1-premium" /> Prix en PREMIUM <span class="info-icon" data-step-id="d1-premium">ⓘ</span> <button class="ai-button" data-step-id="d1-premium" type="button" title="Générer prompt IA">?</button></label>
+            </div>
+          </section>
+
+          <section class="card" id="card-h4">
+            <h2>H4 - Zone</h2>
+            <p>Construire la zone H4 dans un ordre strict, aligné D1.</p>
+            <div class="checks">
+              <label><input type="checkbox" data-state="H4_STRUCTURE_OK" data-group="H4" data-step="1" data-step-id="h4-structure" /> Structure H4 alignée <span class="info-icon" data-step-id="h4-structure">ⓘ</span> <button class="ai-button" data-step-id="h4-structure" type="button" title="Générer prompt IA">?</button></label>
+              <label><input type="checkbox" data-state="H4_LIQUIDITY_OK" data-group="H4" data-step="2" data-step-id="h4-liquidity" /> Liquidité H4 identifiée <span class="info-icon" data-step-id="h4-liquidity">ⓘ</span> <button class="ai-button" data-step-id="h4-liquidity" type="button" title="Générer prompt IA">?</button></label>
+              <label><input type="checkbox" data-state="H4_DISPLACEMENT_OK" data-group="H4" data-step="3" data-step-id="h4-displacement" /> Displacement validé <span class="info-icon" data-step-id="h4-displacement">ⓘ</span> <button class="ai-button" data-step-id="h4-displacement" type="button" title="Générer prompt IA">?</button></label>
+              <label><input type="checkbox" data-state="H4_FVG_OK" data-group="H4" data-step="4" data-step-id="h4-fvg" /> FVG créée par displacement <span class="info-icon" data-step-id="h4-fvg">ⓘ</span> <button class="ai-button" data-step-id="h4-fvg" type="button" title="Générer prompt IA">?</button></label>
+              <label><input type="checkbox" data-state="H4_OB_OK" data-group="H4" data-step="5" data-step-id="h4-ob" /> Order Block H4 valide <span class="info-icon" data-step-id="h4-ob">ⓘ</span> <button class="ai-button" data-step-id="h4-ob" type="button" title="Générer prompt IA">?</button></label>
+            </div>
+          </section>
+
+          <section class="card" id="card-h1">
+            <h2>H1 - Reaction</h2>
+            <p>Confirmer la réaction dans la zone H4.</p>
+            <div class="checks">
+              <label><input type="checkbox" data-state="H1_PRICE_IN_ZONE" data-group="H1" data-step="1" data-step-id="h1-price" /> Prix dans la zone H4 <span class="info-icon" data-step-id="h1-price">ⓘ</span> <button class="ai-button" data-step-id="h1-price" type="button" title="Générer prompt IA">?</button></label>
+              <label><input type="checkbox" data-state="H1_SWEEP_OK" data-group="H1" data-step="2" data-step-id="h1-sweep" /> Sweep liquidité H1 <span class="info-icon" data-step-id="h1-sweep">ⓘ</span> <button class="ai-button" data-step-id="h1-sweep" type="button" title="Générer prompt IA">?</button></label>
+              <label><input type="checkbox" data-state="H1_CHOCH_OK" data-group="H1" data-step="3" data-step-id="h1-choch" /> CHoCH H1 confirmé <span class="info-icon" data-step-id="h1-choch">ⓘ</span> <button class="ai-button" data-step-id="h1-choch" type="button" title="Générer prompt IA">?</button></label>
+            </div>
+          </section>
+
+          <section class="card" id="card-m15">
+            <h2>M15 - Setup</h2>
+            <p>Valider le setup en structure fine.</p>
+            <div class="checks">
+              <label><input type="checkbox" data-state="M15_STRUCTURE_OK" data-group="M15" data-step="1" data-step-id="m15-structure" /> Structure M15 alignée <span class="info-icon" data-step-id="m15-structure">ⓘ</span> <button class="ai-button" data-step-id="m15-structure" type="button" title="Générer prompt IA">?</button></label>
+              <label><input type="checkbox" data-state="M15_CHOCH_OK" data-group="M15" data-step="2" data-step-id="m15-choch" /> CHoCH M15 confirmé <span class="info-icon" data-step-id="m15-choch">ⓘ</span> <button class="ai-button" data-step-id="m15-choch" type="button" title="Générer prompt IA">?</button></label>
+              <label><input type="checkbox" data-state="M15_OB_OK" data-group="M15" data-step="3" data-step-id="m15-ob" /> Order Block M15 valide <span class="info-icon" data-step-id="m15-ob">ⓘ</span> <button class="ai-button" data-step-id="m15-ob" type="button" title="Générer prompt IA">?</button></label>
+            </div>
+          </section>
+
+          <section class="card" id="card-order">
+            <h2>ORDER - Décision Limit vs Market</h2>
+            <p>Choisir la stratégie d'entrée selon la position du prix.</p>
+            <div class="checks">
+              <label><input type="checkbox" data-state="ORDER_LIMIT_READY" data-group="ORDER" data-step="1" data-order-type="LIMIT" data-step-id="order-limit" /> Prix PAS encore revenu → LIMIT <span class="info-icon" data-step-id="order-limit">ⓘ</span> <button class="ai-button" data-step-id="order-limit" type="button" title="Générer prompt IA">?</button></label>
+              <label><input type="checkbox" data-state="WAIT_MARKET_CONFIRMATION" data-group="ORDER" data-step="1" data-order-type="MARKET" data-step-id="order-market" /> Prix DÉJÀ dans OB → attente MARKET <span class="info-icon" data-step-id="order-market">ⓘ</span> <button class="ai-button" data-step-id="order-market" type="button" title="Générer prompt IA">?</button></label>
+              <label class="conditional-check" data-show-if="ORDER_LIMIT_READY"><input type="checkbox" data-state="LIMIT_PLACED" data-group="ORDER" data-step="2" data-order-type="LIMIT" data-step-id="limit-placed" /> Ordre LIMIT posé <span class="info-icon" data-step-id="limit-placed">ⓘ</span> <button class="ai-button" data-step-id="limit-placed" type="button" title="Générer prompt IA">?</button></label>
+            </div>
+          </section>
+
+          <section class="card" id="card-m5">
+            <h2>M5 - Execution</h2>
+            <p>Confirmer l'exécution précise et valider l'entrée.</p>
+            <div class="checks">
+              <label><input type="checkbox" data-state="M5_TAP_OK" data-group="M5" data-step="1" data-step-id="m5-tap" /> Tap précis <span class="info-icon" data-step-id="m5-tap">ⓘ</span> <button class="ai-button" data-step-id="m5-tap" type="button" title="Générer prompt IA">?</button></label>
+              <label><input type="checkbox" data-state="M5_REJECTION_OK" data-group="M5" data-step="2" data-step-id="m5-rejection" /> Rejet clair (mèche + clôture) <span class="info-icon" data-step-id="m5-rejection">ⓘ</span> <button class="ai-button" data-step-id="m5-rejection" type="button" title="Générer prompt IA">?</button></label>
+              <label><input type="checkbox" data-state="M5_MOMENTUM_OK" data-group="M5" data-step="3" data-step-id="m5-momentum" /> Momentum immédiat <span class="info-icon" data-step-id="m5-momentum">ⓘ</span> <button class="ai-button" data-step-id="m5-momentum" type="button" title="Générer prompt IA">?</button></label>
+              <label class="conditional-check" data-show-if="M5_MOMENTUM_OK_NO_LIMIT"><input type="checkbox" data-state="MARKET_EXECUTION" data-group="M5" data-step="4" data-step-id="market-exec" /> Entrée MARKET <span class="info-icon" data-step-id="market-exec">ⓘ</span> <button class="ai-button" data-step-id="market-exec" type="button" title="Générer prompt IA">?</button></label>
+              <label><input type="checkbox" data-state="TRADE_EXECUTED" data-group="M5" data-step="5" data-step-id="trade-executed" /> ✓ TRADE EXÉCUTÉ <span class="info-icon" data-step-id="trade-executed">ⓘ</span> <button class="ai-button" data-step-id="trade-executed" type="button" title="Générer prompt IA">?</button></label>
+            </div>
+          </section>
+
+          <section class="card" id="card-cancel">
+            <h2>⚠️ ANNULATION</h2>
+            <p>Trade invalidé avant exécution.</p>
+            <div class="checks">
+              <label><input type="checkbox" data-state="CANCEL_TRADE" data-group="CANCEL" data-step="1" data-step-id="cancel" /> ✗ Trade annulé <span class="info-icon" data-step-id="cancel">ⓘ</span> <button class="ai-button" data-step-id="cancel" type="button" title="Générer prompt IA">?</button></label>
+            </div>
+          </section>
+        </section>
+      </section>
+
+      <section id="discussionTab" class="tab-content">
+        <div class="discussion">
+          <div id="messageList" class="message-list"></div>
+          <div class="message-input">
+            <textarea id="messageInput" placeholder="Écrire un message..."></textarea>
+            <button id="sendMessageBtn" class="btn-primary" type="button">Envoyer</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="transitionsTab" class="tab-content">
+        <section class="log">
+          <h3>Journal des transitions</h3>
+          <ul id="logList"></ul>
+        </section>
+      </section>
+    </main>
+  </section>
+
+  <!-- Mode Selection Modal -->
+  <div id="modeModalOverlay" class="panel-overlay modal-overlay"></div>
+  <div id="modeSelectionModal" class="modal-dialog">
+    <div class="modal-header">
+      <h3>Créer une nouvelle session</h3>
+      <button class="close-btn" id="closeModeModal" type="button">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label for="modeSymbolInput">Paire / Instrument:</label>
+        <select id="modeSymbolInput" class="input" autofocus>
+          <optgroup label="📈 FOREX - Majeures">
+            <option value="EURUSD">EUR/USD</option>
+            <option value="GBPUSD">GBP/USD</option>
+            <option value="USDJPY">USD/JPY</option>
+            <option value="USDCHF">USD/CHF</option>
+            <option value="AUDUSD">AUD/USD</option>
+            <option value="USDCAD">USD/CAD</option>
+            <option value="NZDUSD">NZD/USD</option>
+          </optgroup>
+          <optgroup label="💱 FOREX - Mineures">
+            <option value="EURGBP">EUR/GBP</option>
+            <option value="EURJPY">EUR/JPY</option>
+            <option value="EURCHF">EUR/CHF</option>
+            <option value="EURAUD">EUR/AUD</option>
+            <option value="EURCAD">EUR/CAD</option>
+            <option value="EURNZD">EUR/NZD</option>
+            <option value="GBPJPY">GBP/JPY</option>
+            <option value="GBPCHF">GBP/CHF</option>
+            <option value="GBPAUD">GBP/AUD</option>
+            <option value="GBPCAD">GBP/CAD</option>
+            <option value="GBPNZD">GBP/NZD</option>
+            <option value="AUDJPY">AUD/JPY</option>
+            <option value="AUDCHF">AUD/CHF</option>
+            <option value="AUDCAD">AUD/CAD</option>
+            <option value="AUDNZD">AUD/NZD</option>
+            <option value="CADJPY">CAD/JPY</option>
+            <option value="CHFJPY">CHF/JPY</option>
+            <option value="NZDJPY">NZD/JPY</option>
+            <option value="NZDCHF">NZD/CHF</option>
+            <option value="NZDCAD">NZD/CAD</option>
+          </optgroup>
+          <optgroup label="🥇 Matières Premières">
+            <option value="XAUUSD">Gold (XAU/USD)</option>
+            <option value="XAGUSD">Silver (XAG/USD)</option>
+            <option value="USOIL">Crude Oil (WTI)</option>
+            <option value="UKOIL">Brent Oil</option>
+            <option value="NATGAS">Natural Gas</option>
+            <option value="COPPER">Copper</option>
+          </optgroup>
+          <optgroup label="📊 Indices">
+            <option value="US30">Dow Jones 30 (US30)</option>
+            <option value="NAS100">Nasdaq 100 (NAS100)</option>
+            <option value="SPX500">S&P 500 (SPX500)</option>
+            <option value="GER40">DAX 40 (GER40)</option>
+            <option value="UK100">FTSE 100 (UK100)</option>
+            <option value="FRA40">CAC 40 (FRA40)</option>
+            <option value="AUS200">ASX 200 (AUS200)</option>
+            <option value="JPN225">Nikkei 225 (JPN225)</option>
+            <option value="HK50">Hang Seng 50 (HK50)</option>
+          </optgroup>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label>Mode de trading:</label>
+        <div class="radio-group">
+          <label class="radio-label">
+            <input type="radio" name="mode" value="SWING" checked />
+            <span class="radio-box"></span>
+            <span class="radio-text">
+              <strong>Swing</strong>
+              <small>D1 → H4 → H1 → M15 → M5</small>
+            </span>
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="mode" value="INTRADAY" />
+            <span class="radio-box"></span>
+            <span class="radio-text">
+              <strong>Intraday</strong>
+              <small>H4 → H1 → M15 → M5 → M1</small>
+            </span>
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button id="cancelModeBtn" class="btn-ghost" type="button">Annuler</button>
+      <button id="confirmModeBtn" class="btn-primary" type="button">Créer</button>
+    </div>
+  </div>
+
+  <!-- Explanation Panel -->
+  <div id="panelOverlay" class="panel-overlay"></div>
+  <div id="explanationPanel" class="explanation-panel">
+    <div class="panel-header">
+      <h3 id="panelTitle">Titre de l'étape</h3>
+      <button id="closePanel" class="close-btn" type="button">&times;</button>
+    </div>
+    <div class="panel-content">
+      <div class="panel-section">
+        <h4>Ce que l'on cherche</h4>
+        <p id="panelSearch"></p>
+      </div>
+      <div class="panel-section">
+        <h4>Correspondance SMC</h4>
+        <p id="panelSmc"></p>
+      </div>
+      <div class="panel-section">
+        <h4>Pourquoi cette étape existe</h4>
+        <p id="panelWhy"></p>
+      </div>
+      <div class="panel-section">
+        <h4>Action dans le workflow</h4>
+        <p id="panelAction"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Prompt Modal -->
+  <div id="aiModalOverlay" class="panel-overlay"></div>
+  <div id="aiPromptModal" class="ai-prompt-modal">
+    <div class="panel-header">
+      <h3>🤖 Prompt IA (context-aware)</h3>
+      <button id="closeAIModal" class="close-btn" type="button">&times;</button>
+    </div>
+    <div class="panel-content">
+      <div class="prompt-info">
+        <p><strong>Instructions:</strong> Copiez ce prompt et collez-le dans ChatGPT avec une capture du graphique.</p>
+      </div>
+      <textarea id="aiPromptText" class="prompt-text" readonly></textarea>
+      <div class="prompt-actions">
+        <button id="copyPromptBtn" class="btn-action" type="button">📋 Copier</button>
+        <button id="copyAndCloseBtn" class="btn-action" type="button">✅ Copier & Fermer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tooltip -->
+  <div id="tooltip" class="tooltip"></div>
+
+  <!-- ES Module Entrypoint -->
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>
