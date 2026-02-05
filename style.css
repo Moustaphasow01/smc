@@ -1543,6 +1543,27 @@ body {
   opacity: 0.9;
 }
 
+@media (max-width: 720px) {
+  .segmented-control {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .segmented-option-wrapper {
+    min-width: 0;
+    flex: 1 1 100%;
+  }
+
+  .segmented-button {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .segmented-text small {
+    word-break: break-word;
+  }
+}
+
 .choice-info-btn,
 .choice-ai-btn {
   padding: 6px 8px;
