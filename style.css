@@ -1251,6 +1251,12 @@ body {
   width: 100%;
 }
 
+.form-group select,
+.form-group textarea,
+.form-group input[type="text"] {
+  font-size: 1rem;
+}
+
 /* Radio buttons styling */
 .radio-group {
   display: flex;
@@ -1326,6 +1332,45 @@ body {
   color: var(--muted);
   font-size: 0.85rem;
   font-family: "Courier New", monospace;
+}
+
+@media (max-width: 640px) {
+  .modal-dialog {
+    width: 95%;
+    max-width: 95%;
+    max-height: 90vh;
+  }
+
+  .modal-body {
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+
+  .modal-header,
+  .modal-body,
+  .modal-footer {
+    padding: 14px;
+  }
+
+  .modal-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .modal-footer .btn-primary,
+  .modal-footer .btn-ghost {
+    width: 100%;
+  }
+
+  .radio-label {
+    padding: 10px;
+  }
+
+  .form-group select,
+  .form-group textarea,
+  .form-group input[type="text"] {
+    font-size: 16px;
+  }
 }
 
 /* ===================== CHOICE GROUPS & SEGMENTED CONTROLS ===================== */
