@@ -117,7 +117,9 @@ function renderDashboard() {
   dom.dashboardGrid.innerHTML = "";
   dom.dashboardEmpty.style.display = sessions.length ? "none" : "block";
 
-  sessions.forEach((session) => {
+  const isGroupedView = dom.dashboardGrid.classList.contains('group-view');
+
+  const createSessionCard = (session) => {
     const card = document.createElement("div");
     card.className = "dashboard-card";
     const mode = session.mode || "SWING";
@@ -192,8 +194,58 @@ function renderDashboard() {
       }
     });
 
-    dom.dashboardGrid.appendChild(card);
-  });
+    return card;
+  };
+
+  if (isGroupedView) {
+    const groupMap = new Map();
+    sessions.forEach((session) => {
+      const baseSymbol = (session.symbol || "").replace(/\s*\(copie\)$/i, "").trim() || session.symbol;
+      if (!groupMap.has(baseSymbol)) groupMap.set(baseSymbol, []);
+      groupMap.get(baseSymbol).push(session);
+    });
+
+    const groupEntries = Array.from(groupMap.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+
+    groupEntries.forEach(([symbol, items]) => {
+      const group = document.createElement("details");
+      group.className = "pair-group";
+      group.open = true;
+
+      const avgProgress = Math.round(items.reduce((sum, s) => sum + (computeProgress(s, { stateFlow }) || 0), 0) / items.length);
+      const lastUpdated = items.reduce((latest, s) => {
+        const date = new Date(s.updatedAt);
+        return date > latest ? date : latest;
+      }, new Date(0));
+      const bullishCount = items.filter(s => s.bias === 'BULLISH').length;
+      const bearishCount = items.filter(s => s.bias === 'BEARISH').length;
+
+      group.innerHTML = `
+        <summary class="pair-group-summary">
+          <div class="pair-group-title">
+            <span class="pair-group-symbol">${symbol}</span>
+            <span class="pair-group-count">${items.length} session(s)</span>
+          </div>
+          <div class="pair-group-meta">
+            <span class="pair-group-chip">🟢 ${bullishCount}</span>
+            <span class="pair-group-chip">🔴 ${bearishCount}</span>
+            <span class="pair-group-chip">🎯 ${avgProgress}%</span>
+            <span class="pair-group-chip">🕒 ${formatDate(lastUpdated)}</span>
+          </div>
+        </summary>
+      `;
+
+      const list = document.createElement("div");
+      list.className = "pair-group-list";
+      items.forEach((session) => list.appendChild(createSessionCard(session)));
+      group.appendChild(list);
+      dom.dashboardGrid.appendChild(group);
+    });
+  } else {
+    sessions.forEach((session) => {
+      dom.dashboardGrid.appendChild(createSessionCard(session));
+    });
+  }
 }
 
 function updateDashboardStats(sessions) {
@@ -1363,18 +1415,31 @@ function init() {
   
   const gridViewBtn = document.getElementById('gridViewBtn');
   const listViewBtn = document.getElementById('listViewBtn');
-  if (gridViewBtn && listViewBtn) {
+  const groupViewBtn = document.getElementById('groupViewBtn');
+  if (gridViewBtn && listViewBtn && groupViewBtn) {
     gridViewBtn.addEventListener("click", () => {
-      dom.dashboardGrid.classList.remove('list-view');
+      dom.dashboardGrid.classList.remove('list-view', 'group-view');
       dom.dashboardGrid.classList.add('grid-view');
       gridViewBtn.classList.add('active');
       listViewBtn.classList.remove('active');
+      groupViewBtn.classList.remove('active');
+      renderDashboard();
     });
     listViewBtn.addEventListener("click", () => {
-      dom.dashboardGrid.classList.remove('grid-view');
+      dom.dashboardGrid.classList.remove('grid-view', 'group-view');
       dom.dashboardGrid.classList.add('list-view');
       listViewBtn.classList.add('active');
       gridViewBtn.classList.remove('active');
+      groupViewBtn.classList.remove('active');
+      renderDashboard();
+    });
+    groupViewBtn.addEventListener("click", () => {
+      dom.dashboardGrid.classList.remove('grid-view', 'list-view');
+      dom.dashboardGrid.classList.add('group-view');
+      groupViewBtn.classList.add('active');
+      gridViewBtn.classList.remove('active');
+      listViewBtn.classList.remove('active');
+      renderDashboard();
     });
   }
 
